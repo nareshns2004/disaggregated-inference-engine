@@ -1,0 +1,12 @@
+# D3 — kvwire, full RDMA transport. Same GPUs as C0, split into P and D pools; P:D swept.
+system: D3
+engine: { name: vllm, version: PINNED_IN_ADR_0001 }
+transport: { backend: rdma, strategy: chained_wr, rails: auto }
+model: llama-3.1-8b
+pools: { prefill: 1, decode: 1 }   # swept
+workload:
+  lengths: { prompts: [512, 2048, 8192], outputs: [64, 256, 1024] }
+  arrivals: { kind: poisson, rates_rps: sweep }
+slo: { ttft_ms: TODO, tpot_ms: TODO }
+steady_state_s: 600
+repetitions: 3

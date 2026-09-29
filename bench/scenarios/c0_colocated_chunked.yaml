@@ -1,0 +1,11 @@
+# C0 — strongest baseline: vLLM colocated, chunked prefill ON, tuned. GPU-count parity with D*.
+system: C0
+engine: { name: vllm, version: PINNED_IN_ADR_0001, chunked_prefill: true, tuning_notes: TODO }
+model: llama-3.1-8b
+gpus: 2
+workload:
+  lengths: { prompts: [512, 2048, 8192], outputs: [64, 256, 1024] }
+  arrivals: { kind: poisson, rates_rps: sweep }
+slo: { ttft_ms: TODO, tpot_ms: TODO }   # chosen per model, stated in the report
+steady_state_s: 600
+repetitions: 3

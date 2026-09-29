@@ -1,0 +1,13 @@
+# K07 — the stale-write test. Must be PREVENTED, not detected.
+name: k07-late-write-after-abort
+seed: 7
+revert_timeout_s: 30
+faults:
+  - fault_class: K07
+    label: induced
+    target: prefill:any
+    trials: 20
+    at: streaming
+    params:
+      hold: "transport-test-hook"   # hold WRs, abort, revoke, reuse blocks, release WRs
+      expect: "remote_access_error_and_reused_block_intact"
