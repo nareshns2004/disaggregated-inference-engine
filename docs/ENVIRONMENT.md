@@ -12,8 +12,8 @@
 - Models and weights to be used, and their licenses:
 - Scratch path:
 - Clock sync (chrony/PTP):
-- **Provenance / clearance:** hardware owner; written permission to use it for a personal
-  public project and to publish results. TODO
+- **Provenance / clearance:** hardware owner; written permission to use it for this public
+  project and to publish results. TODO
 
 ## Generated section (`make env-manifest`)
 <!-- GENERATED:BEGIN -->

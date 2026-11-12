@@ -1,10 +1,17 @@
 # kvwire
 
+[![ci](https://github.com/nareshns2004/disaggregated-inference-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/nareshns2004/disaggregated-inference-engine/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)
+![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)
+
 **Moving the KV cache between prefill and decode GPUs at line rate, and staying correct when the network fails mid-transfer.**
 
 kvwire is a GPUDirect RDMA transport, a KV re-layout kernel, and a failure-aware coordinator
 for **disaggregated LLM inference**. It plugs into vLLM through its KV connector interface. It
-does not replace the engine. It replaces the part that moves bytes and the part that decides
+does not replace the engine (the repository is named `disaggregated-inference-engine`; the
+project and package are `kvwire`). It replaces the part that moves bytes and the part that decides
 what to do when moving bytes goes wrong.
 
 > **Status: M1, pre-results.** This repository is being built in public, milestone by
@@ -104,13 +111,14 @@ never on its own:
 
 | # | Headline | Compared against | Initial target (hypothesis) | Result |
 |---|---|---|---|---|
-| 1 | **Transport efficiency**: paged per-layer KV throughput, GPU→GPU | perftest `ib_write_bw --use_cuda` (same NIC, size, QPs) | ≥ 85% of ceiling | — |
+| 1 | **Transport efficiency**: paged per-layer KV throughput, GPU→GPU | perftest `ib_write_bw --use_cuda` large-message peak (also reported vs the ceiling at the region size) | ≥ 85% of ceiling | — |
 | 2 | **TTFT**: p50/p99, with a stacked decomposition | kvwire-TCP, reference connector (NIXL), colocated vLLM | Lower than TCP at every prompt ≥ 1K tokens | — |
 | 3 | **Request success under fault**, plus a **hard zero-corruption gate** | Reference connector under an identical fault schedule | ≥ 99.9% success; **0** corrupted outputs | — |
 
 Hypotheses (each gets confirmed or refuted in writing, see [`docs/PROJECT_BRIEF.md §4`](docs/PROJECT_BRIEF.md)):
 - **H1.** Naive per-block WRITE falls well short of line rate. WR batching, SGE coalescing, or
-  packing close most of the gap.
+  packing close most of the gap. (Known risk: modern NICs may already be near peak at 64 KiB
+  messages, so the efficiency-vs-size sweep comes first and decides the regime tested.)
 - **H2.** With layer-wise streaming, exposed transfer is a small fraction of TTFT on RDMA for
   prompts ≥ 1K tokens. On TCP it is not small.
 - **H3.** Disaggregation beats chunked-prefill colocation on goodput-per-GPU **only** when prompts
@@ -161,7 +169,7 @@ kvwire/                    Python package (control plane, CPU-testable)
   coordinator/               router, transfer registry, transfer state machine, membership
   connector/                 vLLM KV-connector adapter (the only vLLM-version-specific code)
   transport/                 Python-side Transport interface, TCP control variant, native loader
-  topology/                  GPU↔NIC PCIe/NUMA affinity → topology.json (schema shared with goodput)
+  topology/                  GPU↔NIC PCIe/NUMA affinity → topology.json
   kvcalc/                    KV-size and message-size calculator (implemented)
   sim/                       simulated engine for CPU-only coordinator tests
   cli.py                     `kvwire` command-line entry point
@@ -175,7 +183,7 @@ bench/                     load generator, serving scenarios, report generator, 
 scripts/                   env manifest, topology dump, perftest ceiling sweep
 dashboards/                Grafana (Should)
 tests/                     unit/ integration/ gpu/ multinode/ fixtures/
-docs/                      brief, architecture, transport, evaluation, fault matrix, ADRs, interview defense
+docs/                      brief, prior art, architecture, transport, evaluation, fault matrix, ADRs, open questions
 ```
 
 ---
@@ -193,15 +201,15 @@ performance claims need real hardware.
 | **3 · 2+ GPU nodes** | a real fabric | every headline number: efficiency, TTFT, faults, goodput crossover |
 
 ```bash
-# Tier 0 (lightweight: pytest, ruff, mypy only)
-python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev]"
-make test                      # CPU tests; GPU/multinode tests are skipped automatically
-kvwire kv-size --preset llama-3.1-8b --prompt 4096 --block-size 16
+# Tier 0 (lightweight: pytest, ruff, mypy only; needs uv)
+make setup                     # .venv + dev deps + pre-commit hooks
+make check                     # ruff, mypy --strict, CPU tests, number-provenance guard
+.venv/bin/kvwire kv-size --preset llama-3.1-8b --prompt 4096 --block-size 16
 
-# Tier 1+ (when you have the toolchain)
+# Tier 1+ (when you have the toolchain: CMake >= 3.22, C++20, optionally libibverbs-dev)
 make transport                 # CMake; builds the verbs backend only if libibverbs is found
-make test-rxe
+make test-transport            # C++ unit tests
+make test-rxe                  # transport logic over SoftRoCE (non-performance)
 ```
 
 Heavy dependencies (vLLM, PyTorch, Triton, pybind11) are **optional extras** (`.[gpu]`, `.[vllm]`)
@@ -212,11 +220,14 @@ and are never imported at package import time.
 ## 7. Methodology: the parts that stop numbers from lying
 
 - **Ceilings first.** Every transport number comes with the `ib_write_bw` / `ib_write_lat` ceiling
-  for the same NIC, message size, QP count, and GPU-vs-host memory mode (`/ceiling-check`).
+  for the same NIC, message size, QP count, and GPU-vs-host memory mode (`make ceiling`).
+  Efficiency is reported against both the ceiling at the region size and the large-message
+  peak; the headline uses the peak.
 - **The strongest baseline.** Colocated vLLM with **chunked prefill on and tuned**, at **GPU-count
   parity** with the disaggregated setup. The P:D ratio is swept, and the best ratio is reported.
 - **Goodput, not throughput.** The metric is the maximum request rate at ≥ 90% joint TTFT+TPOT SLO
-  attainment, also reported **per GPU** (DistServe's framing).
+  attainment, also reported **per GPU** (DistServe's framing). SLO values are pinned before
+  any baseline runs.
 - **Statistics.** ≥ 10 min steady state, ≥ 3 interleaved repetitions, bootstrap CIs on percentiles,
   ≥ 20 trials per fault class, and fixed seeds.
 - **Correctness gate.** Greedy decoding compared against colocated reference outputs, with the
@@ -251,6 +262,11 @@ kvwire builds on, and is measured against: **DistServe** (OSDI '24), **Splitwise
 **vLLM disaggregated prefill / KV connectors**, **SGLang PD disaggregation**, **LMCache**, and **llm-d**.
 For each one, [`docs/prior_art.md`](docs/prior_art.md) records its mechanism, its gap, and what kvwire reuses.
 
+First findings (draft, sourced in that file): Mooncake's Transfer Engine and NIXL document
+retry, rerouting and teardown on failure, but neither documents preventing a late write from
+an aborted transfer landing in reused blocks, or publishes zero-corruption results under
+fault. The go / re-scope decision is still open.
+
 ---
 
 ## 10. Honest limitations (stated up front)
@@ -264,6 +280,31 @@ For each one, [`docs/prior_art.md`](docs/prior_art.md) records its mechanism, it
 
 ---
 
-## License
+## Documentation
 
-TBD. Pick one before the first public push, after IP clearance (see `docs/ENVIRONMENT.md`, *Provenance*).
+| Doc | Contents |
+|---|---|
+| [PROJECT_BRIEF](docs/PROJECT_BRIEF.md) | Problem, positioning, hypotheses, targets, scope, risks |
+| [prior_art](docs/prior_art.md) | Existing systems, what kvwire reuses, the gap decision |
+| [ARCHITECTURE](docs/ARCHITECTURE.md) | Components, request lifecycle, schemas, failure semantics |
+| [TRANSPORT](docs/TRANSPORT.md) | Verbs design: registration, small-message strategies, completion, fencing |
+| [FAULT_MATRIX](docs/FAULT_MATRIX.md) | Fault classes K01–K12: injection, detection, required behaviour |
+| [EVALUATION](docs/EVALUATION.md) | Metric definitions, systems under test, workloads, protocol |
+| [MILESTONES](docs/MILESTONES.md) | M1–M6 deliverables and exit criteria |
+| [ENVIRONMENT](docs/ENVIRONMENT.md) | Hardware, allowlist, provenance; generated env manifest |
+| [ADRs](docs/adr/) | Architecture decisions and their status |
+| [OPEN_QUESTIONS](docs/OPEN_QUESTIONS.md) | Open design questions, and where resolved ones were settled |
+
+## Related artifacts
+
+[goodput](https://github.com/nareshns2004/fault-tolerant-training-orchestrator) (fault
+attribution for multi-node training) shares kvwire's fault-injection conventions. A
+Hugging Face dataset of measured KV-transfer traces and a Space to explore them are planned
+once real, run-id-backed traces exist (PROJECT_BRIEF §10).
+
+## Contributing, security, licence
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): hardware tiers, conventions, evidence rules, DCO sign-off.
+- [SECURITY.md](SECURITY.md): private reporting, the cross-request corruption threat model,
+  and faultlab's safety rules.
+- Licensed under the [Apache License 2.0](LICENSE).

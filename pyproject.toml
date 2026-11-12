@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,7 +7,24 @@ name = "kvwire"
 version = "0.0.1"
 description = "GPUDirect RDMA KV-cache transport, re-layout kernel and failure-aware coordinator for disaggregated LLM inference (vLLM)."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+authors = [{ name = "kvwire contributors" }]
+keywords = ["rdma", "gpudirect", "kv-cache", "disaggregated-inference", "vllm", "llm-serving"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: System :: Networking",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 # Core has zero runtime dependencies on purpose: the control plane must be testable on a laptop.
 dependencies = []
 
@@ -18,11 +35,20 @@ native = ["pybind11>=2.13"]                         # builds transport/python bi
 gpu = ["torch>=2.4", "triton>=3.0"]                 # kernels/ (M4)
 vllm = ["vllm"]                                     # pin an exact version in ADR-0001 before use
 
+[project.urls]
+Homepage = "https://github.com/nareshns2004/disaggregated-inference-engine"
+Documentation = "https://github.com/nareshns2004/disaggregated-inference-engine/tree/main/docs"
+Issues = "https://github.com/nareshns2004/disaggregated-inference-engine/issues"
+Changelog = "https://github.com/nareshns2004/disaggregated-inference-engine/blob/main/CHANGELOG.md"
+
 [project.scripts]
 kvwire = "kvwire.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kvwire", "faultlab"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [".local", "*.pdf", "bench/results/*/", "build*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -44,4 +70,4 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
-packages = ["kvwire", "faultlab"]
+packages = ["kvwire", "faultlab", "bench"]

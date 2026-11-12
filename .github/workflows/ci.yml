@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: python · lint · typecheck · CPU tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (laptop tier; no torch, vLLM or native extension)
+        run: uv pip install -e '.[dev,bench]'
+      - name: ruff
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: mypy --strict
+        run: mypy
+      - name: pytest (gpu / multinode / rxe tiers skipped)
+        run: pytest
+      - name: No number without provenance (README and docs)
+        run: python scripts/check_numbers.py README.md docs/*.md docs/adr/*.md
+      - name: CLI smoke test (calculation, not a measurement)
+        run: kvwire kv-size --preset llama-3.1-8b --prompt 4096 --block-size 16
+      - name: Build sdist and wheel
+        run: uv build
+
+  transport:
+    name: C++ transport · ${{ matrix.sanitizer }} · ${{ matrix.verbs }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [none, address, undefined]
+        verbs: [no-verbs, verbs]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rdma-core headers (verbs backend compiles; no device needed)
+        if: matrix.verbs == 'verbs'
+        run: sudo apt-get update && sudo apt-get install -y libibverbs-dev
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+          -DKVWIRE_SANITIZER=${{ matrix.sanitizer }}
+          -DKVWIRE_WITH_VERBS=${{ matrix.verbs == 'verbs' && 'ON' || 'OFF' }}
+      - name: Build (-Wall -Wextra -Werror -Wpedantic)
+        run: cmake --build build -j
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure -L unit
+
+  hygiene:
+    name: repo hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No compiled, cache, or local-only files tracked
+        run: |
+          if git ls-files | grep -E '(__pycache__/|\.py[cod]$|\.venv/|^\.local/|\.pdf$|CLAUDE\.local\.md)'; then
+            echo "tracked files that must stay local; see .gitignore" >&2; exit 1
+          fi

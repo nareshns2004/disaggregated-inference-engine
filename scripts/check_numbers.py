@@ -28,6 +28,7 @@ OK = re.compile(
             r">=",
             r"<=",
             r"cite",
+            r"literature",  # cited literature values are allowed when labelled (rule 3)
             r"\[\d+\]",
             r"TODO",
             r"e\.g\.",

@@ -18,7 +18,13 @@
 - **Goodput:** the maximum arrival rate (req/s) at which SLO attainment is ≥ 90%. It is
   also reported per GPU (DistServe's framing), since disaggregation changes GPU counts.
 - **Transport efficiency:** achieved KV bytes/s ÷ perftest `ib_write_bw` (GPU memory,
-  same NIC, same effective message size, same QP count) × 100%.
+  same NIC, same QP count) × 100%, always reported against **two denominators**:
+  - **vs region-size ceiling**: `ib_write_bw` at the same message size as the KV regions
+    (32–64 KiB for the 8B model, depending on layout). Shows how close each strategy gets
+    to what the NIC can do at that size.
+  - **vs large-message peak**: the plateau of the `ib_write_bw` sweep (true line rate).
+    **The headline (metric #1) uses this one**; otherwise per-block WRITE (strategy a)
+    looks better than it is and packing (strategy c) gets no credit.
 - **Exposed transfer fraction:** exposed transfer ÷ TTFT.
 - **Request success rate:** completed requests ÷ admitted requests during a fault run.
   Fast, explicit failures are counted separately from timeouts.
@@ -56,6 +62,8 @@ P:D ratio is swept, and the best ratio is reported per workload. State this expl
 
 ## 4. Protocol
 
+- **Ceilings first:** the perftest sweep (`make ceiling`, `--use_cuda`) runs before any
+  transport number is taken, and its run id is cited by every transport result.
 - **Microbenchmarks (transport):**
   - message sizes 4 KiB–64 MiB
   - per-layer block batches at realistic block sizes
@@ -63,6 +71,8 @@ P:D ratio is swept, and the best ratio is reported per workload. State this expl
   - each strategy from TRANSPORT §4
   - ≥ 10 repetitions after warmup; p50/p99 and 95% CI
 - **Serving:**
+  - SLO values (TTFT, TPOT) are pinned per model and committed **before** C0 is run, so
+    they cannot be chosen after seeing which system they favour
   - each (workload, rate, system) point runs ≥ 10 minutes steady state after warmup
   - ≥ 3 repetitions with interleaved order
   - bootstrap CIs on percentiles
@@ -72,6 +82,11 @@ P:D ratio is swept, and the best ratio is reported per workload. State this expl
   - injection time randomized, with a fixed seed
   - one long mixed-fault run (≥ 2 h) at a stated fault rate and load
   - identical schedules for D0 and D3
+  - K07 runs with ≥ 2 rails (per-rail commit counting is where the subtle bugs live)
+  - **sample size:** a success rate of ≥ 99.9% can only be claimed from ≥ 3,000 admitted
+    requests under fault with zero failures (rule of three), or from the 95% lower
+    confidence bound actually achieved; likewise "zero corruption" is reported together
+    with the number of requests checked
 - **Correctness:**
   - greedy decoding with fixed seeds
   - the reference is the C0 output on the same model and weights

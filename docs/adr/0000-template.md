@@ -2,7 +2,7 @@
 
 - Status: Proposed | Accepted | Superseded by ADR-XXXX
 - Date:
-- Deciders: Naresh (+ Claude Code as advisor)
+- Deciders: maintainers
 
 ## Context
 What forces are at play; constraints; what we measured.

@@ -12,16 +12,20 @@
 
 namespace kvwire::transport {
 
+// Primary fences are responder-side: the side that owns the memory must be able to fence
+// alone, because in K01/K03 the sender may be dead or partitioned (ADR-0005).
 enum class FenceMechanism : std::uint8_t {
-  kMemoryWindow,        // per-transfer type-2 MW, invalidated before block reuse
-  kQpResetWithHorizon,  // QP -> ERR on abort; reuse only after flush or lease >= horizon
-  // Epoch tags are *detection* only and are always on; never a mechanism by themselves.
+  kMemoryWindow,      // ADR-0005 option 1: per-transfer type-2 MW, invalidated before reuse
+  kReceiverQpReset,   // ADR-0005 option 2: receiver moves its own QP to ERR/RESET on abort
+  // Not primary mechanisms:
+  //  - sender-side QP ERR + lease >= RetransmitHorizon (option 3) is belt-and-braces only;
+  //  - epoch tags (option 4) are detection, always on, never sufficient alone.
 };
 
 // Upper bound on how long a sender's WRITE can still be retransmitted after the fact:
 //   per-attempt timeout = 4.096 us * 2^timeout, times (retry_cnt + 1) attempts.
 // Pure arithmetic, unit-tested. Note it bounds the *requester's* retries only; see
-// docs/REVIEW_NOTES.md for why the responder-side fence is still the one to rely on.
+// docs/TRANSPORT.md §5 for why the responder-side fence is still the one to rely on.
 std::chrono::nanoseconds RetransmitHorizon(std::uint8_t timeout_exp, std::uint8_t retry_cnt);
 
 class Fence {

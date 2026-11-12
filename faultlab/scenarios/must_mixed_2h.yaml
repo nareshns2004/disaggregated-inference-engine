@@ -4,7 +4,7 @@ seed: 42
 duration_s: 7200
 fault_rate_per_hour: TODO   # set after M3, and state it in the report
 faults:
-  - { fault_class: K01, label: real, target: decode:any }
-  - { fault_class: K03, label: real, target: prefill:any }
-  - { fault_class: K04, label: real, target: rail:any }
+  - { fault_class: K01, label: induced, target: decode:any }
+  - { fault_class: K03, label: induced, target: prefill:any }
+  - { fault_class: K04, label: induced, target: rail:any }
   - { fault_class: K06, label: induced, target: prefill:any }

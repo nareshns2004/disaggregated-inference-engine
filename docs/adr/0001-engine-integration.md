@@ -8,7 +8,7 @@
    reference connectors exist for comparison.
 2. **SGLang PD disaggregation.** Strong performance; a smaller surface; a different
    transfer-backend abstraction.
-3. **A minimal custom engine.** Full control, but it is a non-goal, and interviewers
+3. **A minimal custom engine.** Full control, but it is a non-goal, and reviewers
    would ask why it was rebuilt.
 
 ## Leaning
