@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="450" viewBox="0 0 880 450" role="img" aria-labelledby="t d">
+<title id="t">kvwire architecture</title>
+<desc id="d">Clients reach a router/coordinator that holds the transfer registry, state machine and admission control, and exchanges only metadata with the pools. KV bytes move from the prefill pool's kvwire connector to the decode pool's connector over RDMA writes, layer by layer, across multiple rails, fenced by epoch. Pack and unpack kernels are gated on a measured win. faultlab injects faults into both pools.</desc>
+<defs><linearGradient id="acc" x1="0" x2="1"><stop offset="0" stop-color="#1D4ED8"/><stop offset=".6" stop-color="#B4470E"/><stop offset="1" stop-color="#C2261D"/></linearGradient><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#353A44"/></marker><marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#B4470E"/></marker><marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#555C6A"/></marker></defs>
+<style>
+    .kick { font: 700 12.5px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; letter-spacing: .14em; fill: #15171C; }
+    .kick2 { font: 600 11px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; letter-spacing: .1em; fill: #555C6A; }
+    .h { font: 650 25px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; fill: #15171C; letter-spacing: -.014em; }
+    .sub { font: 500 12px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; fill: #353A44; }
+    .cap { font: 600 10.5px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; fill: #555C6A; letter-spacing: .06em; }
+    .lbl { font: 600 11px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; fill: #15171C; }
+    .lbl2 { font: 500 10.5px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; fill: #555C6A; }
+    .title { font: 650 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; fill: #15171C; }
+    .box { fill: #EFECE4; stroke: #BDB6A6; stroke-width: 1.2; }
+    .card { fill: #F7F5F0; stroke: #15171C; stroke-width: 1.3; }
+    .wire { fill: none; stroke: #BDB6A6; stroke-width: 1.4; }
+    .ink { fill: none; stroke: #15171C; stroke-width: 1.4; }
+    .sig { fill: none; stroke: #1D4ED8; stroke-width: 1.6; }
+    .cu { fill: none; stroke: #B4470E; stroke-width: 1.8; }
+    .dash { stroke-dasharray: 4 4; }
+    .fs { fill: #1D4ED8; } .fc { fill: #B4470E; } .ff { fill: #C2261D; }
+    .fg { fill: #555C6A; } .fi { fill: #15171C; } .fp { fill: #F7F5F0; }
+    .chip { fill: #F7F5F0; stroke: #BDB6A6; stroke-width: 1; }
+    .chipt { font: 600 10.5px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; fill: #353A44; letter-spacing: .04em; }
+    
+    .arr { fill: none; stroke: #353A44; stroke-width: 1.3; marker-end: url(#ar); }
+    .ctl { fill: none; stroke: #555C6A; stroke-width: 1.2; stroke-dasharray: 4 3;
+            marker-end: url(#arg); marker-start: url(#arg); }
+    .data { fill: none; stroke: #B4470E; stroke-width: 4; }
+    .hl { fill: #F7F5F0; stroke: #B4470E; stroke-width: 2; }
+    .gated { fill: #F7F5F0; stroke: #BDB6A6; stroke-width: 1.2; stroke-dasharray: 4 3; }
+    
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<rect width="880" height="450" rx="12" fill="#F7F5F0"/>
+<rect x="24" y="14" width="832" height="3" rx="1.5" fill="url(#acc)"/>
+<text x="32" y="46" class="kick">SYSTEM CONTEXT</text>
+<text x="32" y="64" class="kick2">control plane ≠ data plane · integrate, don't fork · every byte has an epoch</text>
+<rect x="36" y="86" width="120" height="58" rx="8" class="card"/>
+<text x="96" y="112" class="lbl" text-anchor="middle">clients</text>
+<text x="96" y="128" class="lbl2" text-anchor="middle">OpenAI API</text>
+<path d="M156 115 L214 115" class="arr"/>
+<rect x="216" y="80" width="628" height="70" rx="10" class="box"/>
+<text x="232" y="102" class="title">router / coordinator</text>
+<text x="232" y="120" class="lbl2">never on the data path</text>
+<rect x="410" y="100" width="134" height="30" rx="6" class="card"/>
+<text x="477" y="120" class="lbl" text-anchor="middle">transfer registry</text>
+<rect x="552" y="100" width="134" height="30" rx="6" class="card"/>
+<text x="619" y="120" class="lbl" text-anchor="middle">state machine</text>
+<rect x="694" y="100" width="134" height="30" rx="6" class="card"/>
+<text x="761" y="120" class="lbl" text-anchor="middle">SLO admission</text>
+<rect x="36" y="196" width="312" height="168" rx="10" class="box"/>
+<text x="52" y="218" class="title">prefill pool · TP = p</text>
+<rect x="52" y="230" width="280" height="32" rx="6" class="card"/>
+<text x="192" y="251" class="lbl" text-anchor="middle">vLLM worker</text>
+<rect x="52" y="272" width="280" height="32" rx="6" class="hl"/>
+<text x="192" y="293" class="lbl" text-anchor="middle">kvwire connector · send</text>
+<rect x="52" y="314" width="280" height="32" rx="6" class="gated"/>
+<text x="192" y="335" class="lbl" text-anchor="middle">pack kernel (gated)</text>
+<rect x="532" y="196" width="312" height="168" rx="10" class="box"/>
+<text x="548" y="218" class="title">decode pool · TP = d</text>
+<rect x="548" y="230" width="280" height="32" rx="6" class="card"/>
+<text x="688" y="251" class="lbl" text-anchor="middle">vLLM worker</text>
+<rect x="548" y="272" width="280" height="32" rx="6" class="hl"/>
+<text x="688" y="293" class="lbl" text-anchor="middle">kvwire connector · recv</text>
+<rect x="548" y="314" width="280" height="32" rx="6" class="gated"/>
+<text x="688" y="335" class="lbl" text-anchor="middle">unpack kernel (gated)</text>
+<path d="M192 152 L192 194" class="ctl"/>
+<path d="M688 152 L688 194" class="ctl"/>
+<text x="200" y="178" class="lbl2">reserve · epoch · grant</text>
+<text x="696" y="178" class="lbl2">commit · abort · fence</text>
+<path d="M348 288 L516 288" class="data"/>
+<path d="M514 280 L530 288 L514 296 z" fill="#B4470E"/>
+<text x="438" y="276" class="lbl" text-anchor="middle">RDMA WRITE</text>
+<text x="438" y="308" class="lbl2" text-anchor="middle">layer-wise · multi-rail</text>
+<text x="438" y="322" class="lbl2" text-anchor="middle">epoch-fenced</text>
+<rect x="36" y="382" width="808" height="34" rx="8" class="card dash"/>
+<text x="52" y="404" class="lbl">faultlab</text>
+<text x="124" y="404" class="lbl2">kill P or D · link down / flap · forced QP error · late write · coordinator kill</text>
+<line x1="300" y1="436" x2="330" y2="436" stroke="#B4470E" stroke-width="4"/>
+<text x="338" y="440" class="lbl2">KV bytes (data plane)</text>
+<line x1="500" y1="436" x2="530" y2="436" stroke="#555C6A" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="538" y="440" class="lbl2">metadata over TCP/gRPC (control plane)</text>
+</svg>

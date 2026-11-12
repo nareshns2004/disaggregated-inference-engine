@@ -70,6 +70,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: README graphics match their generator
+        run: |
+          python3 scripts/build_assets.py
+          git diff --exit-code -- docs/assets/
       - name: No compiled, cache, or local-only files tracked
         run: |
           if git ls-files | grep -E '(__pycache__/|\.py[cod]$|\.venv/|^\.local/|\.pdf$|CLAUDE\.local\.md)'; then
