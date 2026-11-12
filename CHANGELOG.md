@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- README visual identity: generated light/dark banner and architecture diagrams
+  (`scripts/build_assets.py`), Mermaid state diagram, social-preview card, badge row and
+  navigation; CI fails if the committed graphics drift from their generator.
+- Fixed: `feature_request.yml` issue template was invalid YAML.
 - Repository scaffold: `kvwire` control plane (KV calculator, schemas, transfer state table,
   registry), C++20 verbs transport interfaces with retransmit-horizon arithmetic, faultlab,
   bench harness, design docs and ADRs 0001–0005.

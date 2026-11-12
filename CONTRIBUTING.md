@@ -63,6 +63,13 @@ SoftRoCE (`rxe`) results are logic tests only and are always labelled *non-perfo
 - Metric change → `docs/EVALUATION.md` only.
 - Design docs for non-trivial components go in `docs/design/` before implementation.
 
+## Graphics
+
+README graphics live in `docs/assets/` and are generated, never hand-edited:
+`python3 scripts/build_assets.py` writes the light and dark SVGs (CI fails if they are out of
+date), and `scripts/render_png.sh` renders the social-preview PNG (needs Chrome/Chromium).
+They are illustrative and must never show a measured-looking number.
+
 ## Commits and pull requests
 
 - [Conventional Commits](https://www.conventionalcommits.org/); one logical change per

@@ -13,7 +13,7 @@ body:
     id: proposal
     attributes:
       label: Proposal
-      description: For a new fault class, include injection mechanism, R/I/S label, signals, correct verdict and recovery (docs/FAULT_MATRIX.md columns: phase, injection, label, detection, required behaviour).
+      description: "For a new fault class, include injection mechanism, R/I/S label, signals, correct verdict and recovery (docs/FAULT_MATRIX.md columns: phase, injection, label, detection, required behaviour)."
     validations:
       required: true
   - type: textarea
