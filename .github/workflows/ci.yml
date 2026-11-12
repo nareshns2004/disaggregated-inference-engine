@@ -21,7 +21,7 @@ jobs:
       matrix:
         python: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python }}
@@ -51,7 +51,7 @@ jobs:
         sanitizer: [none, address, undefined]
         verbs: [no-verbs, verbs]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install rdma-core headers (verbs backend compiles; no device needed)
         if: matrix.verbs == 'verbs'
         run: sudo apt-get update && sudo apt-get install -y libibverbs-dev
@@ -69,7 +69,7 @@ jobs:
     name: repo hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: README graphics match their generator
         run: |
           python3 scripts/build_assets.py
