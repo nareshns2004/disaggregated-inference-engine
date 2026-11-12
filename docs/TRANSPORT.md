@@ -1,6 +1,7 @@
 # Transport design — kvwire
 
-This is the moat. Every choice here must be explainable from first principles by Naresh.
+This is the project's core contribution. Every choice here must be explainable from first
+principles and backed by a measurement against the perftest ceiling.
 
 ## 1. Requirements
 
@@ -34,6 +35,12 @@ This is the moat. Every choice here must be explainable from first principles by
   blocks once prefill has produced that layer's KV. The CUDA event for the layer is the
   trigger. How the CPU learns the event completed (polling thread vs stream callback)
   is a latency trade-off to measure.
+- **Measure the regime first.** On NICs with a 200–400 Gb/s link spec, `ib_write_bw` may already be
+  close to peak at 32–64 KiB messages, in which case naive per-block WRITE (a) would not
+  fall far short and hypothesis H1 weakens. Sweep efficiency vs message size before
+  building the story; the gap widens for smaller regions (K and V in separate tensors,
+  decode TP splitting KV heads, smaller head dims or block sizes). `kvwire kv-size`
+  computes the region size per configuration.
 - **Small-message strategy.** Options, compared in the M2 microbenchmark:
   a. One WRITE per block per layer (baseline, expected to fall short of line rate).
   b. SGE lists: several source blocks → one contiguous remote region (bounded by
@@ -52,7 +59,12 @@ This is the moat. Every choice here must be explainable from first principles by
 
 - **Completion signal.** A final RDMA WRITE-with-immediate carrying (transfer id, epoch),
   or a flag write after the data. Rely on RC in-order delivery on a single QP. With
-  multiple QPs/rails, the receiver must count per-rail commits.
+  multiple QPs/rails, the receiver must count one commit per rail and never infer
+  completeness from a single rail's immediate.
+- **WRITE_WITH_IMM consumes a receive WR.** The decode side must keep its RQ/SRQ
+  replenished or RNR retries start, another unbounded-delay path (`rnr_retry = 7` is
+  infinite). A flag write avoids the RQ but needs polling. The choice is recorded in
+  ADR-0005.
 - **GPU visibility.** Data written by the NIC into GPU memory must be visible to the decode
   kernels that read it. Understand the GPUDirect RDMA consistency model, and when an
   explicit flush (e.g. `cuFlushGPUDirectRDMAWrites`) is required. This depends on whether
@@ -60,16 +72,26 @@ This is the moat. Every choice here must be explainable from first principles by
   polling. Verify against NVIDIA docs for your CUDA version.
 - **Stale-write hazard.** If transfer T times out and its blocks are freed and reassigned
   to request R, a delayed WRITE from T can land in R's KV. The result is silent
-  corruption. Mitigations to evaluate *(ADR-0005 when decided)*:
-  1. Invalidate access before reuse. Per-transfer type-2 memory windows bound to the
-     blocks, invalidated on abort. The NIC then rejects late writes with a remote access
-     error.
-  2. Move the sender's QP to ERR/reset on abort, and wait for flush completions before
-     freeing on the receive side. This needs a round trip, or a lease timeout ≥ the
-     maximum retransmit horizon (computed from the IB timeout × retry count).
-  3. Epoch-tagged blocks, validated by the receiver before readiness. This detects the
-     problem but does not prevent the overwrite. Insufficient alone; combine it with 1
-     or 2.
+  corruption. **Fence on the responder, not the requester:** in K01/K03 the sender may be
+  dead, partitioned or wedged, so the side that owns the memory (decode) must be able to
+  fence alone. Options, as in [ADR-0005](adr/0005-stale-write-fencing.md):
+  1. **Per-transfer type-2 memory window, invalidated by the receiver before reuse.** The
+     NIC rejects late writes with a remote access error. Costs a bind WR per transfer;
+     needs MRs registered with `IBV_ACCESS_MW_BIND`; MW support over dmabuf/peermem GPU
+     MRs is unverified and is the **first M2 experiment**; MW count limits apply.
+  2. **Receiver-side QP to ERR/RESET on abort** (then reconnect). No MW dependency, but
+     collateral damage to other transfers on that QP. Must verify that
+     `ibv_modify_qp(ERR)` returning guarantees no further DMA into host or GPU memory, and
+     consider QPN reuse after re-create.
+  3. **Sender-side QP to ERR + lease ≥ retransmit horizon.** Supplementary only: the sender
+     may be dead, and the horizon bounds requester retransmission, not packets already in
+     the fabric (see the traps below).
+  4. **Epoch tags validated at commit.** Detection only; always on as defence in depth,
+     never sufficient alone.
+- **Retransmit horizon.** 4.096 µs × 2^timeout per attempt × (retry_cnt + 1) attempts,
+  implemented in `transport/src/horizon.cc`. Traps: `timeout = 0` is infinite; the HCA may
+  clamp the effective timeout upward to its `local_ca_ack_delay`; RNR retries are a
+  separate budget; in-fabric packets (PFC pause storms, deep buffers) are not bounded.
 - **Idempotency.** A retransmitted commit for an already-committed or aborted epoch is
   ignored.
 
@@ -91,7 +113,9 @@ connections, zero-copy where available) and document the tuning.
 ## 8. What gets measured (feeds EVALUATION)
 
 For each strategy in §4, versus message size, QP count, and rails:
-- Throughput as % of the ceiling.
+- Throughput as % of the ceiling, against **both** denominators: the perftest ceiling at
+  the same region size, and the large-message peak (true line rate). The headline uses
+  the peak; otherwise strategy (a) looks better than it is (EVALUATION §1).
 - Latency p50/p99.
 - CPU cycles per GB.
 - WRs per second.

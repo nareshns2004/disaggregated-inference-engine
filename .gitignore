@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# C++ / CMake
+/build*/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+*.o
+*.so
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local-only material (personal notes, drafts, booklets): never published
+.local/
+CLAUDE.local.md
+
+# Generated artifacts (topology.json, env manifests)
+artifacts/
+
+# Raw experiment output: commit only curated summaries with their manifest
+bench/results/*/*
+!bench/results/*/config.yaml
+!bench/results/*/manifest.json
+!bench/results/*/report/

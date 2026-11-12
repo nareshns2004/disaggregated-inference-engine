@@ -3,24 +3,33 @@ PY        ?= python3
 BUILD_DIR ?= build
 RUN_ID    ?= $(shell date -u +%Y%m%dT%H%M%SZ)
 
-.PHONY: help setup lint typecheck test test-rxe test-gpu test-multinode transport \
-        env-manifest topo ceiling bench report clean
+.PHONY: help setup check lint typecheck test test-transport test-rxe test-gpu test-multinode \
+        transport check-numbers env-manifest topo ceiling bench report clean
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
 
-setup:           ## dev env (lightweight: pytest/ruff/mypy only)
-	$(PY) -m pip install -e ".[dev]"
-	pre-commit install || true
+setup:           ## dev env in .venv (laptop tier: pytest/ruff/mypy, no torch/vLLM) + pre-commit
+	uv venv --python 3.10 .venv
+	uv pip install --python .venv/bin/python -e ".[dev,bench]"
+	.venv/bin/pre-commit install
+
+check: lint typecheck test check-numbers  ## everything the Python CI job runs
 
 lint:            ## ruff
 	ruff check . && ruff format --check .
 
-typecheck:       ## mypy --strict on kvwire/ and faultlab/
+typecheck:       ## mypy --strict on kvwire/, faultlab/ and bench/
 	mypy
 
 test:            ## CPU tests (GPU/multinode/rxe auto-skipped)
 	$(PY) -m pytest
+
+test-transport:  ## C++ unit tests (after `make transport`)
+	ctest --test-dir $(BUILD_DIR) --output-on-failure -L unit
+
+check-numbers:   ## fail on perf numbers in docs without provenance
+	$(PY) scripts/check_numbers.py README.md docs/*.md docs/adr/*.md
 
 test-rxe:        ## transport logic tests over SoftRoCE (non-performance)
 	$(PY) -m pytest --run-rxe -m rxe

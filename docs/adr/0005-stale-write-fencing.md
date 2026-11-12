@@ -1,7 +1,7 @@
 # ADR-0005: Stale-write fencing mechanism
 
 - Status: Proposed. Decide after the first M2 experiment (MW bind over GPU MRs).
-- Deciders: Naresh ([OWNER-CORE]) + Claude Code as advisor
+- Deciders: maintainers ([OWNER-CORE])
 
 ## Context
 Transfer T times out; its decode blocks are freed and reassigned to request R; a late WRITE from T

@@ -21,7 +21,7 @@ struct QpParams {
   std::uint8_t timeout = 14;       // local ACK timeout exponent: 4.096us * 2^timeout
   std::uint8_t retry_cnt = 7;       // max 7 (finite)
   // NOT 7: rnr_retry=7 means *infinite* RNR retries, which makes the fence horizon unbounded
-  // (WRITE_WITH_IMM consumes a posted recv; an empty RQ triggers RNR). See docs/REVIEW_NOTES.md.
+  // (WRITE_WITH_IMM consumes a posted recv; an empty RQ triggers RNR). See docs/TRANSPORT.md §5.
   std::uint8_t rnr_retry = 6;
   std::uint32_t sq_depth = 1024;
   std::uint32_t mtu = 4096;

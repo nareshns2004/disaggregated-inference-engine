@@ -1,0 +1,23 @@
+name: Feature or fault class proposal
+description: Propose a feature, a new fault class, or a change to the evaluation protocol
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What failure mode or gap does this address? Cite a source if it is a literature claim.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: For a new fault class, include injection mechanism, R/I/S label, signals, correct verdict and recovery (docs/FAULT_MATRIX.md columns: phase, injection, label, detection, required behaviour).
+    validations:
+      required: true
+  - type: textarea
+    id: measure
+    attributes:
+      label: How would we measure it?
+      description: Which metric in docs/EVALUATION.md moves, and against which baseline?

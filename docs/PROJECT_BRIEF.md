@@ -21,7 +21,8 @@ evidence of when this beats colocated serving and when it doesn't.
 - **The messages are small and scattered.** Paged KV means per-layer, per-block chunks.
   For the 8B model with 16-token blocks, that is 16 × 2 × 8 × 128 × 2 B = 64 KiB per
   layer per block. Moving these at line rate is a small-message, many-work-request,
-  scatter-gather problem, not a bulk `memcpy`. This is exactly where RDMA expertise shows.
+  scatter-gather problem, not a bulk `memcpy`, and it is where verbs-level control
+  (WR batching, SGEs, signalling) matters.
 - **Failure semantics are hard and usually unaddressed.** A late RDMA write into a KV
   block that has since been freed and reused silently corrupts another request's
   output. QPs enter error states. Orphaned KV leaks memory on the prefill side. Most
@@ -63,11 +64,16 @@ small scattered messages, under contention, and while hardware fails.
 Hypotheses to confirm or refute with data:
 - **H1.** At realistic block sizes, a naive per-block RDMA WRITE reaches well under line
   rate. WR batching and SGE coalescing (or packing via the kernel) close most of the gap.
+  *Known risk:* on NICs with a 200–400 Gb/s link spec, `ib_write_bw` is often close to peak
+  already at 32–64 KiB, which would weaken H1 at the 8B model's region size. The
+  efficiency-vs-message-size sweep (M1) comes first; if the gap is small there, H1 is
+  tested in the regime where regions are smaller (separate K/V tensors, decode TP splitting
+  KV heads, smaller head dims or blocks). Either answer is published.
 - **H2.** With layer-wise streaming, exposed transfer is a small fraction of TTFT for
   prompts ≥ 1K tokens on RDMA. It is not small on TCP.
 - **H3.** Disaggregation beats chunked-prefill colocated serving on goodput-per-GPU only
-  when prompts are long relative to outputs and TPOT SLOs are tight. The crossover is
-  measurable.
+  when prompts are long relative to outputs and TPOT SLOs are tight. It loses on
+  short-prompt, long-output chat. The crossover is measured and published.
 
 ## 5. Objectives
 
@@ -94,12 +100,12 @@ Targets are hypotheses, revised with M1 data via an ADR. Definitions live in
 
 | # | Metric | Target (initial) | Compared against |
 |---|---|---|---|
-| 1 | KV transport throughput, paged per-layer messages, GPU→GPU | ≥ 85% of `ib_write_bw` at the equivalent aggregate size; efficiency-vs-message-size curve published | perftest ceiling; NIXL; naive per-block WRITE |
+| 1 | KV transport throughput, paged per-layer messages, GPU→GPU | ≥ 85% of the `ib_write_bw` large-message peak (also reported vs the ceiling at the region size); efficiency-vs-message-size curve published | perftest ceiling; NIXL; naive per-block WRITE |
 | 2 | Single-transfer latency (one layer-block batch) | p99 within 1.5× of `ib_write_lat` + size/bandwidth | perftest |
 | 3 | Exposed transfer in TTFT, prompts ≥ 1K tokens | ≤ 10% of TTFT at p50, reported at p99 | TCP transport; reference connector |
 | 4 | TTFT p50/p99 | Lower than the TCP variant at every prompt length ≥ 1K tokens; gap quantified | kvwire-TCP, reference connector |
 | 5 | Goodput (max req/s at ≥ 90% SLO attainment) per GPU | ≥ colocated chunked-prefill in the long-prompt/tight-TPOT regime; crossover plot across the sweep | vLLM colocated (chunked prefill on) |
-| 6 | Request success rate under the fault schedule | ≥ 99.9% completed; failed requests fail fast with a clear error | Reference connector under the same faults |
+| 6 | Request success rate under the fault schedule | ≥ 99.9% completed (needs ≥ 3,000 admitted requests under fault to demonstrate; EVALUATION §4); failed requests fail fast with a clear error | Reference connector under the same faults |
 | 7 | Output corruption | Zero token mismatches under greedy decoding vs reference across all fault runs | Colocated reference outputs |
 | 8 | In-flight request recovery time after decode-node loss | p99 reported; target set after M1 | Reference connector |
 | 9 | Transport CPU cost | ≤ 1 core per NIC at line rate | Reference connector |
@@ -135,11 +141,28 @@ Targets are hypotheses, revised with M1 data via an ADR. Definitions live in
 | NIXL already solves it | M1 prior-art gate; compare, then publish the delta, whether positive or negative |
 | Disaggregation loses on your workloads | That is a result: publish the crossover plot |
 | Scale too small (few nodes) | Report per-GPU goodput; contention experiments; projection only if labeled |
-| Employer IP overlap with the internal POC | Clean-room rule; written clearance before the public push |
+| H1 is weak at the 8B model's region size (NIC already near peak at 64 KiB) | Run the efficiency-vs-size sweep first; test H1 where regions are smaller; publish either way |
+| MW bind over GPU MRs unsupported on the target NIC | First M2 experiment; fall back to receiver-side QP reset with its collateral cost measured (ADR-0005) |
+| Contributed code or data with unclear IP/provenance | Clean-room rule (CONTRIBUTING); DCO sign-off; data only from hardware cleared for publication |
 | The kernel becomes a vanity item | ADR-0003 gate: merge only on measured net win |
-| Claude Code writes code Naresh can't defend | `[OWNER-CORE]` plus `/drill` |
+| Core logic no maintainer can explain | `[OWNER-CORE]` boundaries (MILESTONES) and review before merge |
+| Documentation outruns code | The next public artifact is the ceiling sweep with a run id, not another document |
 
-## 10. Public deliverables (M6)
+## 10. Related artifacts
+
+- **goodput** (sibling repo, training reliability): shares the fault-injection design and
+  ledger conventions (ADR-0004, ADR-0006).
+- **Hugging Face dataset `rdma-kv-transfer-traces`** *(planned)*: KV transfers over RDMA vs
+  TCP by context length, model size and batch, published from `bench/results/` with
+  environment manifests.
+- **Hugging Face Space `disagg-kv-explorer`** *(planned)*: explores those measurements
+  (transfer cost vs recompute, the break-even where disaggregation pays). It does not
+  simulate serving.
+
+Nothing is published on Hugging Face until this repo has produced real, run-id-backed
+traces.
+
+## 11. Public deliverables (M6)
 
 - README with the three headline numbers, each shown against its ceiling and baseline.
 - Transport design doc.

@@ -25,7 +25,7 @@ Status: initial design. *(ADR)* marks decisions to ratify.
    │ connector (send side)       │   multi-rail, fenced        │ connector (recv side)      │
    │ [re-layout kernel if p≠d]   │                             │ [unpack kernel if needed]  │
    └─────────────────────────────┘                             └────────────────────────────┘
-           ▲ faultlab (shared design with goodput): node kill, link flap, QP error, delay
+           ▲ faultlab: node kill, link flap, QP error, delayed write, coordinator kill
 ```
 
 ## 3. Request lifecycle (happy path)
@@ -79,14 +79,17 @@ Status: initial design. *(ADR)* marks decisions to ratify.
 - Each kernel comes with a PyTorch reference, a shape sweep, and Nsight Compute reports.
 
 ### 4.5 Topology (`kvwire/topology/`)
-- GPU↔NIC PCIe affinity (`nvidia-smi topo -m`, sysfs), NUMA, and rail mapping. The same
-  schema as goodput's `topology.json` so the two repos can share it.
+- GPU↔NIC PCIe affinity (`nvidia-smi topo -m`, sysfs), NUMA, and rail mapping, written to
+  `artifacts/topology.json`. The schema is meant to converge with goodput's topology model
+  (ADR-0004); today the two differ (kvwire models one host's GPU↔NIC link matrix, goodput
+  models hosts plus rank placement), so neither repo may depend on the other's file.
 
 ### 4.6 faultlab-lite (`faultlab/`)
 - Scenario YAML; mechanisms: process kill (P or D), link down/flap on the RDMA netdev,
   forced QP error (transition the QP to ERR via the transport's test hook), artificial
   receive delay, coordinator kill.
-- Ground-truth ledger (the same schema idea as goodput).
+- Ground-truth ledger: append-only, fsynced JSONL of `FaultInjection` records labelled
+  per ADR-0006 (the same conventions as goodput).
 
 ### 4.7 bench (`bench/`)
 - Load generator: trace-driven (public conversation traces) and synthetic distributions
@@ -119,7 +122,7 @@ Status: initial design. *(ADR)* marks decisions to ratify.
 - **Invariant:** no block is ever readable by decode unless every write of the *current*
   epoch has completed, and no write from an older epoch can land in it afterwards.
 
-## 7. Scaling notes (interview material)
+## 7. Scaling notes (design intent; not implemented)
 
 - QP count is roughly (#P GPUs × #D GPUs × rails) with RC. Options: connection pooling,
   lazy connect, DC transport where supported, SRD-style transports on other clouds.
@@ -139,6 +142,6 @@ faultlab/      scenario.py ledger.py mechanisms/ scenarios/
 bench/         scenarios/ loadgen/ report/ results/ (raw gitignored)
 scripts/       env_manifest.py ceiling_sweep.sh check_numbers.py
 dashboards/
-docs/          + design/ prior_art.md REVIEW_NOTES.md adr/
+docs/          + design/ prior_art.md OPEN_QUESTIONS.md adr/
 tests/         unit/ integration/ gpu/ multinode/ fixtures/
 ```
