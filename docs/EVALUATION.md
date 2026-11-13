@@ -66,7 +66,9 @@ P:D ratio is swept, and the best ratio is reported per workload. State this expl
   transport number is taken, and its run id is cited by every transport result.
 - **Microbenchmarks (transport):**
   - message sizes 4 KiB–64 MiB
-  - per-layer block batches at realistic block sizes
+  - per-layer block batches at realistic block sizes; the grid always includes **16, 32
+    and 64 KiB** regions, the **separate-K/V** layout and a **decode TP = 2 head split**
+    (the small-message regime H1 is about, ADR-0007)
   - 1–N QPs, 1–N rails
   - each strategy from TRANSPORT §4
   - ≥ 10 repetitions after warmup; p50/p99 and 95% CI

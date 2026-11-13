@@ -1,0 +1,4 @@
+nic,message_bytes,n_qps,memory,bw_gb_per_s,lat_us
+nic0,32768,1,gpu,8.0,5.0
+nic0,65536,1,gpu,10.0,6.0
+nic0,8388608,1,gpu,12.0,

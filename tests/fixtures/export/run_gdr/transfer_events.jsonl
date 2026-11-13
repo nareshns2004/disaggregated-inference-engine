@@ -1,0 +1,5 @@
+{"transfer_id": 7, "epoch": 1, "kind": "enqueued", "ts_ns": 2010, "detail": {"req_id": "r0", "layer": "0"}}
+{"transfer_id": 7, "epoch": 1, "kind": "layer_sent", "ts_ns": 2500, "detail": {"req_id": "r0", "layer": "0"}}
+{"transfer_id": 7, "epoch": 1, "kind": "enqueued", "ts_ns": 3010, "detail": {"req_id": "r0", "layer": "1"}}
+{"transfer_id": 7, "epoch": 1, "kind": "layer_sent", "ts_ns": 3600, "detail": {"req_id": "r0", "layer": "1"}}
+{"transfer_id": 7, "epoch": 1, "kind": "committed", "ts_ns": 3700, "detail": {}}

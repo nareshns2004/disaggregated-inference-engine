@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `kvwire export`: builds the `rdma-kv-transfer-traces` dataset (six configs) from
+  `bench/results/`, validates joins, ceiling coverage, units and provenance before writing,
+  renders the CC-BY-4.0 card, and pushes only after confirmation. Extras `export`, `hub`.
+- `RnrHorizon` / `FenceHorizon`: the RNR retry budget added to the fence horizon.
+- ADR-0007: hardware-independent open questions resolved; HF Project 2 contract.
+- `/plan-milestone`, `/drill`, `/ceiling-check` Claude Code commands.
 - README visual identity: generated light/dark banner and architecture diagrams
   (`scripts/build_assets.py`), Mermaid state diagram, social-preview card, badge row and
   navigation; CI fails if the committed graphics drift from their generator.
@@ -23,6 +29,8 @@ All notable changes to this project are documented here. The format follows
 - Unit test keeping Python `TransportStatus` in lockstep with C++ `StatusCode`.
 
 ### Changed
+- ADR-0001, 0003 and 0004 accepted; commit signal fixed as WRITE_WITH_IMM per rail on a
+  replenished SRQ with `rnr_retry ≤ 6`; M2 grid gains 16/32/64 KiB, separate-K/V, TP = 2.
 - Licence stated as Apache-2.0 throughout (the LICENSE file already was).
 - TRANSPORT §5 and the C++ `FenceMechanism` aligned with ADR-0005: the fence is on the
   responder; sender-side QP reset plus lease is supplementary only.

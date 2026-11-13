@@ -1,6 +1,6 @@
 # ADR-0003: Triton kernel scope and merge gate
 
-- Status: Proposed
+- Status: Accepted (2026-11-13, ADR-0007)
 
 ## Decision
 

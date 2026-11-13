@@ -1,0 +1,4 @@
+model,context_len,batch,tp,gpu,rep,duration_ms
+m8b,2048,1,1,fixture-gpu,0,100.0
+m8b,2048,1,1,fixture-gpu,1,110.0
+m8b,2048,1,1,fixture-gpu,2,120.0

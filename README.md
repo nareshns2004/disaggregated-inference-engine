@@ -21,12 +21,12 @@
 
 kvwire is a GPUDirect RDMA transport, a KV re-layout kernel, and a failure-aware coordinator
 for **disaggregated LLM inference**. It plugs into vLLM through its KV connector interface. It
-does not replace the engine (the repository is named `disaggregated-inference-engine`; the
-project and package are `kvwire`). It replaces the part that moves bytes and the part that decides
+does not replace the engine (the repository is being renamed from
+`disaggregated-inference-engine` to `kvwire`, the project and package name, ADR-0007). It replaces the part that moves bytes and the part that decides
 what to do when moving bytes goes wrong.
 
 > [!NOTE]
-> **Pre-alpha, milestone M1, pre-results.** This repository is built in public, milestone by
+> **GitHub Project 2 · pre-alpha, milestone M1, pre-results.** This repository is built in public, milestone by
 > milestone. Nothing below is a result yet. Every number this README will ever show links to
 > a run directory under `bench/results/<run_id>/` with a full environment manifest, and sits
 > next to the hardware ceiling it was measured against. Until then, the result cells say
@@ -269,7 +269,7 @@ Full protocol: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 | M | Milestone | Key exit criterion | Status |
 |:---|:---|:---|:---|
-| **M1** | Baselines, hardware ceilings, harness, prior-art gate | perftest ceilings recorded; C0 goodput curve for ≥ 2 workloads; ADRs 0001–0004 decided | ◐ in progress |
+| **M1** | Baselines, hardware ceilings, harness, prior-art gate | perftest ceilings recorded; C0 goodput curve for ≥ 2 workloads; ADR-0001 pinned, ADR-0002 decided | ◐ in progress |
 | M2 | RDMA KV transport (C++) | efficiency-vs-size curve for 4 strategies; K06 + K07 pass with zero corruption | ○ planned |
 | M3 | Prefill/decode split integrated into vLLM | TTFT decomposition: TCP vs RDMA vs reference; correctness gate green | ○ planned |
 | M4 | KV re-layout kernel (Triton), gated | ADR-0003 decided with data: merge, or publish as a negative result | ○ planned |
@@ -322,10 +322,22 @@ fault. The go / re-scope decision is still open.
 
 ## Related artifacts
 
-[goodput](https://github.com/nareshns2004/fault-tolerant-training-orchestrator) (fault
-attribution for multi-node training) shares kvwire's fault-injection conventions. A
-Hugging Face dataset of measured KV-transfer traces and a Space to explore them are planned
-once real, run-id-backed traces exist (PROJECT_BRIEF §10).
+kvwire is one half of a two-repo portfolio on GPU networking and distributed systems:
+[**goodput**](https://github.com/nareshns2004/fault-tolerant-training-orchestrator)
+(GitHub Project 1) covers *reliability* at scale (cross-layer fault attribution for
+multi-node training), and kvwire (GitHub Project 2) covers *efficiency* at scale. They share
+the fault-injection discipline and the real / induced / synthetic labels (ADR-0006).
+
+kvwire's measured runs feed **Hugging Face Project 2**
+([ADR-0007](docs/adr/0007-open-questions-resolved.md)):
+
+| Artifact | Role | Status |
+|---|---|---|
+| [`rdma-kv-transfer-traces`](https://huggingface.co/datasets/nareshns2004/rdma-kv-transfer-traces) | Dataset (CC-BY-4.0): `transfers`, `transfers_raw`, `layer_timelines`, `ceilings`, `prefill`, `environments`. Built by `kvwire export`, which refuses any row without a same-config ceiling. v0 = ceilings + environments from the M1 sweep. | Planned (M1) |
+| [`disagg-kv-explorer`](https://huggingface.co/spaces/nareshns2004/disagg-kv-explorer) | Space: efficiency vs message size, transfer vs recompute, break-even, exposed transfer, from measured rows only (no serving simulation) | Planned (after dataset v1) |
+
+Nothing is uploaded until real, run-id-backed rows exist on hardware cleared for
+publication.
 
 ## Contributing, security, licence
 

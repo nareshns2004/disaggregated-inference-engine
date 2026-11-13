@@ -5,7 +5,8 @@ contributor). Human contributors should start with [CONTRIBUTING.md](CONTRIBUTIN
 
 ## What this repo is
 
-**kvwire** (repository: `disaggregated-inference-engine`) splits LLM serving into prefill
+**kvwire** (GitHub Project 2; repository being renamed from `disaggregated-inference-engine`
+to `kvwire`) splits LLM serving into prefill
 and decode GPU pools and moves the KV cache between them over GPUDirect RDMA. It is **not**
 a new inference engine: it plugs a verbs transport, a KV re-layout kernel and a
 failure-aware coordinator into vLLM through its KV connector interface (ADR-0001).
@@ -17,9 +18,22 @@ The three headline numbers it must earn with measurements:
    including the regime where disaggregation *loses*.
 3. **Request success under fault**, with **zero corrupted outputs** as a hard gate.
 
-Sibling project: goodput (fault attribution for multi-node training) shares the
-fault-injection discipline and possibly, later, the topology schema and an RDMA transport
-library (ADR-0004).
+### Where it sits
+
+kvwire is one of two repos in one portfolio; keep them consistent:
+
+- **GitHub Project 1: goodput** (`fault-tolerant-training-orchestrator`, being renamed
+  `goodput`): fault attribution and recovery for multi-node training; reliability at scale.
+- **GitHub Project 2: kvwire** (this repo): efficiency at scale.
+- **Hugging Face Project 1**, built only from goodput: model `qwen3-nccl-rca-lora`, Space
+  `nccl-incident-rca`.
+- **Hugging Face Project 2**, built only from this repo's `bench/results/`: dataset
+  `rdma-kv-transfer-traces` (six configs, CC-BY-4.0, via `kvwire export`) and Space
+  `disagg-kv-explorer` (measured rows only; no serving simulation).
+
+One HF model and one HF dataset across the portfolio; no third repo. The two repos share the
+fault-injection discipline and provenance labels, and maybe later an RDMA transport library
+(ADR-0004); no shared topology file is claimed yet (ADR-0007).
 
 ## Maintainers and calibration
 
@@ -98,6 +112,8 @@ make topo                        # (M1) GPU↔NIC PCIe/NUMA affinity -> artifact
 make ceiling                     # perftest sweep -> bench/results/<run_id>/ceiling/
 make bench SCENARIO=<path.yaml>  # (M1) serving experiment -> bench/results/<run_id>/
 make report RUN=<run_id>         # (M1+)
+kvwire export --runs <dirs> --out <dir> [--format parquet|jsonl] [--validate-only] [--push]
+                                 # HF Project 2 dataset; validates first; push asks first
 ```
 
 ## Code conventions
@@ -115,11 +131,20 @@ make report RUN=<run_id>         # (M1+)
   *why*.
 - Personal, local-only notes go in `.local/` or `CLAUDE.local.md` (both gitignored).
 
+## Slash commands
+
+- `/plan-milestone <M>`: writes a plan and stops for approval.
+- `/drill [component]`: five interview questions, graded against the repo.
+- `/ceiling-check [target]`: rejects any transport number without a same-config ceiling.
+
 ## Current state
 
 - Milestone: **M1** (baselines, workload/trace harness, hardware ceilings, prior-art gate).
-- Open decisions: ADR-0001 to ADR-0005 are *Proposed*; ADR-0006 is *Accepted*. See
-  `docs/OPEN_QUESTIONS.md`.
+- ADRs: 0001, 0003, 0004, 0006, 0007 *Accepted*; 0002 (GPUDirect mode) and 0005 (fence)
+  *Proposed* until their M1/M2 experiments. Open: OQ-1, OQ-3, OQ-4, OQ-5b, OQ-10
+  (`docs/OPEN_QUESTIONS.md`).
 - Implemented: `kvwire/kvcalc`, schemas, transfer state-machine table, in-memory registry,
-  env manifest probe, retransmit-horizon arithmetic, faultlab ledger. Everything else is
+  env manifest probe, retransmit + RNR horizon arithmetic, faultlab ledger, `kvwire export`
+  (HF Project 2 dataset builder and validator).
+- Next public artifact: the M1 perftest ceiling sweep → dataset v0 (ceilings + environments). Everything else is
   interfaces and stubs. No measurements yet.

@@ -10,6 +10,11 @@
 - Operational fragility.
 - Which path upstream stacks (NIXL/UCX) use by default.
 
+## Also decided here (from ADR-0007)
+
+Whether `cuFlushGPUDirectRDMAWrites` is required when decode is ordered by the host
+observing the commit CQE (OQ-5b). Measured in M2.
+
 ## Fallback
 
 Host staging, clearly labeled and measured as a separate configuration.

@@ -28,6 +28,18 @@ enum class FenceMechanism : std::uint8_t {
 // docs/TRANSPORT.md §5 for why the responder-side fence is still the one to rely on.
 std::chrono::nanoseconds RetransmitHorizon(std::uint8_t timeout_exp, std::uint8_t retry_cnt);
 
+// RNR budget for the commit WRITE_WITH_IMM landing on an empty receive queue (ADR-0007):
+//   rnr_retry * RNR NAK timer, where the timer is the responder's min_rnr_timer code
+//   (IBV_QP_MIN_RNR_TIMER, 5-bit IB-spec encoding; code 0 = 655.36 ms, 1 = 0.01 ms, ...,
+//   31 = 491.52 ms). rnr_retry == 7 means infinite and returns nanoseconds::max(); codes
+//   above 31 or rnr_retry above 7 are invalid and also return max (fail safe).
+std::chrono::nanoseconds RnrHorizon(std::uint8_t rnr_retry, std::uint8_t min_rnr_timer_code);
+
+// Conservative bound used by the lease backstop: transport retries plus RNR retries,
+// saturating at nanoseconds::max(). A WR can hit both, so the bound is their sum.
+std::chrono::nanoseconds FenceHorizon(std::uint8_t timeout_exp, std::uint8_t retry_cnt,
+                                      std::uint8_t rnr_retry, std::uint8_t min_rnr_timer_code);
+
 class Fence {
  public:
   virtual ~Fence() = default;
