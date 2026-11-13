@@ -37,3 +37,6 @@ bench/results/*/*
 !bench/results/*/config.yaml
 !bench/results/*/manifest.json
 !bench/results/*/report/
+
+# Claude Code: shared commands are tracked; personal settings are not
+.claude/settings.local.json
