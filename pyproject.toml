@@ -38,10 +38,10 @@ gpu = ["torch>=2.4", "triton>=3.0"]                 # kernels/ (M4)
 vllm = ["vllm"]                                     # pin an exact version in ADR-0001 before use
 
 [project.urls]
-Homepage = "https://github.com/nareshns2004/disaggregated-inference-engine"
-Documentation = "https://github.com/nareshns2004/disaggregated-inference-engine/tree/main/docs"
-Issues = "https://github.com/nareshns2004/disaggregated-inference-engine/issues"
-Changelog = "https://github.com/nareshns2004/disaggregated-inference-engine/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/nareshns2004/kvwire-disaggregated-inference-engine"
+Documentation = "https://github.com/nareshns2004/kvwire-disaggregated-inference-engine/tree/main/docs"
+Issues = "https://github.com/nareshns2004/kvwire-disaggregated-inference-engine/issues"
+Changelog = "https://github.com/nareshns2004/kvwire-disaggregated-inference-engine/blob/main/CHANGELOG.md"
 
 [project.scripts]
 kvwire = "kvwire.cli:main"

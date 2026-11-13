@@ -5,8 +5,7 @@ contributor). Human contributors should start with [CONTRIBUTING.md](CONTRIBUTIN
 
 ## What this repo is
 
-**kvwire** (GitHub Project 2; repository being renamed from `disaggregated-inference-engine`
-to `kvwire`) splits LLM serving into prefill
+**kvwire** (GitHub Project 2; repository `kvwire-disaggregated-inference-engine`) splits LLM serving into prefill
 and decode GPU pools and moves the KV cache between them over GPUDirect RDMA. It is **not**
 a new inference engine: it plugs a verbs transport, a KV re-layout kernel and a
 failure-aware coordinator into vLLM through its KV connector interface (ADR-0001).
@@ -22,8 +21,7 @@ The three headline numbers it must earn with measurements:
 
 kvwire is one of two repos in one portfolio; keep them consistent:
 
-- **GitHub Project 1: goodput** (`fault-tolerant-training-orchestrator`, being renamed
-  `goodput`): fault attribution and recovery for multi-node training; reliability at scale.
+- **GitHub Project 1: goodput** (repository `goodput-fault-tolerant-training-orchestrator`): fault attribution and recovery for multi-node training; reliability at scale.
 - **GitHub Project 2: kvwire** (this repo): efficiency at scale.
 - **Hugging Face Project 1**, built only from goodput: model `qwen3-nccl-rca-lora`, Space
   `nccl-incident-rca`.
