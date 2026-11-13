@@ -343,7 +343,7 @@ def architecture(t: dict[str, str]) -> str:
     return svg(w, h, "kvwire architecture", desc, css, "\n".join(b), t, defs)
 
 
-REPO = "github.com/nareshns2004/disaggregated-inference-engine"
+REPO = "github.com/nareshns2004/kvwire-disaggregated-inference-engine"
 
 
 def social(t: dict[str, str], repo: str) -> str:

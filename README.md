@@ -6,7 +6,7 @@
   <img alt="kvwire. Move the KV cache at line rate; stay correct when the wire fails. A prefill pool computes layer by layer while KV blocks stream over two RDMA rails into a decode pool's paged blocks, and a late write from an aborted transfer is stopped at the fence." src="docs/assets/banner-light.svg" width="100%">
 </picture>
 
-[![CI](https://github.com/nareshns2004/disaggregated-inference-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/nareshns2004/disaggregated-inference-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/nareshns2004/kvwire-disaggregated-inference-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/nareshns2004/kvwire-disaggregated-inference-engine/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-1D4ED8?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-1D4ED8?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20%20·%20ASan%20·%20UBSan-1D4ED8?style=flat-square&logo=cplusplus&logoColor=white)](transport/)
@@ -21,8 +21,8 @@
 
 kvwire is a GPUDirect RDMA transport, a KV re-layout kernel, and a failure-aware coordinator
 for **disaggregated LLM inference**. It plugs into vLLM through its KV connector interface. It
-does not replace the engine (the repository is being renamed from
-`disaggregated-inference-engine` to `kvwire`, the project and package name, ADR-0007). It replaces the part that moves bytes and the part that decides
+does not replace the engine (the repository is
+`kvwire-disaggregated-inference-engine`; the project and package are `kvwire`, ADR-0007). It replaces the part that moves bytes and the part that decides
 what to do when moving bytes goes wrong.
 
 > [!NOTE]
@@ -323,7 +323,7 @@ fault. The go / re-scope decision is still open.
 ## Related artifacts
 
 kvwire is one half of a two-repo portfolio on GPU networking and distributed systems:
-[**goodput**](https://github.com/nareshns2004/fault-tolerant-training-orchestrator)
+[**goodput**](https://github.com/nareshns2004/goodput-fault-tolerant-training-orchestrator)
 (GitHub Project 1) covers *reliability* at scale (cross-layer fault attribution for
 multi-node training), and kvwire (GitHub Project 2) covers *efficiency* at scale. They share
 the fault-injection discipline and the real / induced / synthetic labels (ADR-0006).

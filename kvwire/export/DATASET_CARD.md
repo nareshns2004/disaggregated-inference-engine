@@ -19,7 +19,7 @@ hardware each row came from. It answers one question: **at a given model, contex
 and fabric, is moving the KV cache cheaper than recomputing it, and how much of the move
 is hidden behind prefill compute?**
 
-Produced by [kvwire](https://github.com/nareshns2004/disaggregated-inference-engine)
+Produced by [kvwire](https://github.com/nareshns2004/kvwire-disaggregated-inference-engine)
 (GitHub Project 2) at commit `{{kvwire_commit}}`, from runs
 {{run_ids}}. Explored in the
 [disagg-kv-explorer](https://huggingface.co/spaces/nareshns2004/disagg-kv-explorer) Space.
@@ -67,7 +67,7 @@ Produced by [kvwire](https://github.com/nareshns2004/disaggregated-inference-eng
 ## Reproduce
 
 ```
-git clone https://github.com/nareshns2004/disaggregated-inference-engine && cd disaggregated-inference-engine
+git clone https://github.com/nareshns2004/kvwire-disaggregated-inference-engine && cd kvwire-disaggregated-inference-engine
 git checkout {{kvwire_commit}}
 make ceiling                                   # perftest sweep
 make bench SCENARIO=bench/scenarios/<x>.yaml   # transfers, prefill, timelines
