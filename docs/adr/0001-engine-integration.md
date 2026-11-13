@@ -1,6 +1,7 @@
 # ADR-0001: Integrate with vLLM via the KV connector interface
 
-- Status: Proposed
+- Status: Accepted (2026-11-13, ADR-0007). The exact vLLM version, attention backend and
+  its K/V layout are pinned here at M1 bring-up.
 
 ## Options
 
@@ -11,7 +12,7 @@
 3. **A minimal custom engine.** Full control, but it is a non-goal, and reviewers
    would ask why it was rebuilt.
 
-## Leaning
+## Decision
 
 Option 1. Pin the version; keep all version-specific code in `kvwire/connector/`.
 Revisit if the connector API cannot expose per-layer readiness without invasive patches.

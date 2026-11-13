@@ -1,7 +1,7 @@
 # Open questions
 
 Design concerns and pending decisions, first collected in the scaffold review (2026-09-29;
-updated 2026-11-12). Nothing here has been measured. Each item becomes a doc fix, an ADR or
+updated 2026-11-13). Nothing here has been measured. Each item becomes a doc fix, an ADR or
 an experiment; once resolved, it moves to the table at the end with a link to where it was
 settled.
 
@@ -11,9 +11,6 @@ settled.
 RDMA NICs. Record `nvidia-smi topo -m`, `ibv_devinfo` and provenance/clearance in
 `docs/ENVIRONMENT.md` before M2. With one node only, the TTFT results cannot be produced
 honestly; decide early whether to rent two nodes.
-
-**OQ-2 · ADRs 0001–0004 are Proposed.** M1 exit requires them accepted or revised
-(engine pin and attention backend in ADR-0001, GPUDirect mode in ADR-0002).
 
 ## Transport and fencing (decided by M2 experiments)
 
@@ -28,28 +25,12 @@ no further DMA into host or GPU memory? After destroy and re-create, can QPN reu
 packet match the new QP? PSN mismatch makes it unlikely, but unlikely is not a guarantee.
 Needed if ADR-0005 falls back to option 2.
 
-**OQ-5 · Commit signal: WRITE_WITH_IMM or flag write.** IMM consumes a receive WR (RQ/SRQ
-must stay replenished, RNR retries otherwise); a flag write needs polling. Decide and justify
-in ADR-0005. Also decide whether `cuFlushGPUDirectRDMAWrites` is needed, which depends on
-whether decode is ordered by the host observing the CQE or by GPU-side flag polling.
+**OQ-5b · GPU visibility of the committed data.** The commit signal is decided
+(WRITE_WITH_IMM per rail, ADR-0007). Still open: whether `cuFlushGPUDirectRDMAWrites` is
+needed when decode is ordered by the host observing the CQE. Measured in M2; recorded in
+ADR-0002.
 
-**OQ-6 · KV layout of the pinned vLLM backend.** Separate K/V tensors give 32 KiB regions and
-twice the region count of interleaved 64 KiB regions (calculation; `kvwire kv-size
---layout`). This changes the SGE/WR budget in TRANSPORT §4 and the regime for H1. Pin in M1.
-
-**OQ-7 · H1 may be weak at 64 KiB.** If `ib_write_bw` is near peak at the real region size,
-naive per-block WRITE will not fall far short. The efficiency-vs-size sweep decides which
-regime the H1 experiment targets (PROJECT_BRIEF §4).
-
-## Scope and naming
-
-**OQ-8 · One public name.** The repository is `disaggregated-inference-engine`, but the
-project, package and CLI are `kvwire`, and the README says plainly that it is not an engine.
-Consider renaming the repository to `kvwire` before the first release (GitHub keeps
-redirects from the old name). `kvwire` was free on PyPI when checked (2026-11-12).
-
-**OQ-9 · Topology schema convergence with goodput.** ADR-0004 says "share now", but the two
-schemas differ (ARCHITECTURE §4.5). Pick one, or drop the claim.
+## Publication
 
 **OQ-10 · Publication clearance.** Written clearance for any hardware used to produce
 published numbers, recorded in `docs/ENVIRONMENT.md` → Provenance.
@@ -68,4 +49,5 @@ published numbers, recorded in `docs/ENVIRONMENT.md` → Provenance.
 | R vs I labels on scheduled faults | R only for unscheduled failures | ADR-0006, FAULT_MATRIX |
 | SLO shopping | SLOs pinned before C0 runs | EVALUATION §4, MILESTONES M1 |
 | Crossover could be trimmed | "Where disaggregation loses" is an M5/M6 exit criterion | MILESTONES |
+| OQ-2 (partly), OQ-5 commit signal, OQ-6 KV layout, OQ-7 H1 regime, OQ-8 public name, OQ-9 topology convergence | ADR-0001/0003/0004 accepted (0002, 0005 wait for experiments); WRITE_WITH_IMM + SRQ + `rnr_retry ≤ 6` with the RNR term in the horizon; layout pinned in M1 with both layouts in every grid; 16/32/64 KiB, separate-K/V and TP=2 in the M2 grid; repo renamed `kvwire`; no shared topology file claimed | [ADR-0007](adr/0007-open-questions-resolved.md) |
 | Python/C++ status codes drifted | Python enum completed; parity test added | `tests/unit/test_transport_parity.py` |

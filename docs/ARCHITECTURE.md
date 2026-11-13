@@ -80,8 +80,8 @@ Status: initial design. *(ADR)* marks decisions to ratify.
 
 ### 4.5 Topology (`kvwire/topology/`)
 - GPU↔NIC PCIe affinity (`nvidia-smi topo -m`, sysfs), NUMA, and rail mapping, written to
-  `artifacts/topology.json`. The schema is meant to converge with goodput's topology model
-  (ADR-0004); today the two differ (kvwire models one host's GPU↔NIC link matrix, goodput
+  `artifacts/topology.json`. It converges with goodput's topology model only once both
+  exist on real hardware (ADR-0004, ADR-0007); today the two differ (kvwire models one host's GPU↔NIC link matrix, goodput
   models hosts plus rank placement), so neither repo may depend on the other's file.
 
 ### 4.6 faultlab-lite (`faultlab/`)

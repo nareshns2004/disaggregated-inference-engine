@@ -36,7 +36,8 @@ interfaces, write tests and benchmarks, and review.
 - Ceilings recorded, including the efficiency-vs-message-size curve for `ib_write_bw`
   (decides the regime in which H1 is tested).
 - C0 goodput curve for ≥ 2 workloads.
-- ADRs 0001–0004 accepted or revised.
+- ADR-0001 pinned (vLLM version, attention backend, K/V layout); ADR-0002 decided from
+  bring-up. ADR-0003 and ADR-0004 are already accepted (ADR-0007).
 - Prior-art go/re-scope decision written.
 - Brief §6 targets revised with data.
 
@@ -49,8 +50,10 @@ interfaces, write tests and benchmarks, and review.
   target NIC, firmware and driver, and what does a bind cost? The answer decides ADR-0005.
 - Verbs lifecycle with RAII; whole-pool MR registration; GPUDirect (dmabuf or peermem).
 - The four small-message strategies (TRANSPORT §4) behind one interface; C++
-  microbenchmarks vs the ceiling.
-- Completion signaling; epoch fencing prototype; QP error reset path.
+  microbenchmarks vs the ceiling over the EVALUATION §4 grid (16/32/64 KiB regions,
+  separate-K/V, decode TP = 2).
+- Completion signaling (WRITE_WITH_IMM per rail on a replenished SRQ, `rnr_retry ≤ 6`,
+  ADR-0007); epoch fencing prototype; QP error reset path.
 - TCP variant behind the same interface.
 - pybind11 bindings.
 - Loopback/rxe logic tests, plus two-node GPU tests.
