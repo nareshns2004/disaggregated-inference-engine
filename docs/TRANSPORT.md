@@ -57,14 +57,15 @@ principles and backed by a measurement against the perftest ceiling.
 
 ## 5. Completion, ordering, and fencing
 
-- **Completion signal.** A final RDMA WRITE-with-immediate carrying (transfer id, epoch),
-  or a flag write after the data. Rely on RC in-order delivery on a single QP. With
+- **Completion signal.** A final RDMA WRITE-with-immediate per rail carrying (transfer id,
+  epoch) (ADR-0007). Rely on RC in-order delivery on a single QP. With
   multiple QPs/rails, the receiver must count one commit per rail and never infer
   completeness from a single rail's immediate.
-- **WRITE_WITH_IMM consumes a receive WR.** The decode side must keep its RQ/SRQ
-  replenished or RNR retries start, another unbounded-delay path (`rnr_retry = 7` is
-  infinite). A flag write avoids the RQ but needs polling. The choice is recorded in
-  ADR-0005.
+- **WRITE_WITH_IMM consumes a receive WR.** The decode side keeps an SRQ replenished
+  (refill below a low-water mark, alarm on `IBV_EVENT_SRQ_LIMIT_REACHED`), and
+  `rnr_retry ≤ 6`, never 7 (infinite), so the RNR path has a finite budget
+  (`RnrHorizon`). A flag write was rejected: it needs polling and gives no CQE to order
+  decode on (ADR-0007).
 - **GPU visibility.** Data written by the NIC into GPU memory must be visible to the decode
   kernels that read it. Understand the GPUDirect RDMA consistency model, and when an
   explicit flush (e.g. `cuFlushGPUDirectRDMAWrites`) is required. This depends on whether
@@ -88,10 +89,12 @@ principles and backed by a measurement against the perftest ceiling.
      the fabric (see the traps below).
   4. **Epoch tags validated at commit.** Detection only; always on as defence in depth,
      never sufficient alone.
-- **Retransmit horizon.** 4.096 µs × 2^timeout per attempt × (retry_cnt + 1) attempts,
-  implemented in `transport/src/horizon.cc`. Traps: `timeout = 0` is infinite; the HCA may
-  clamp the effective timeout upward to its `local_ca_ack_delay`; RNR retries are a
-  separate budget; in-fabric packets (PFC pause storms, deep buffers) are not bounded.
+- **Retransmit horizon.** 4.096 µs × 2^timeout per attempt × (retry_cnt + 1) attempts
+  (`RetransmitHorizon`), plus the RNR budget rnr_retry × RNR NAK timer (`RnrHorizon`,
+  IB-spec timer encoding where code 0 is the *largest*, 655.36 ms). `FenceHorizon` is
+  their sum; all in `transport/src/horizon.cc`, unit-tested. Traps: `timeout = 0` and
+  `rnr_retry = 7` are infinite; the HCA may clamp the effective timeout upward to its
+  `local_ca_ack_delay`; in-fabric packets (PFC pause storms, deep buffers) are not bounded.
 - **Idempotency.** A retransmitted commit for an already-committed or aborted epoch is
   ignored.
 
