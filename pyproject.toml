@@ -31,6 +31,8 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-timeout>=2.3", "ruff>=0.6", "mypy>=1.11", "pre-commit>=3.8"]
 bench = ["pyyaml>=6", "numpy>=1.26", "matplotlib>=3.8"]
+export = ["pyarrow>=15"]                            # kvwire export --format parquet
+hub = ["huggingface_hub>=0.30"]                     # kvwire export --push
 native = ["pybind11>=2.13"]                         # builds transport/python bindings
 gpu = ["torch>=2.4", "triton>=3.0"]                 # kernels/ (M4)
 vllm = ["vllm"]                                     # pin an exact version in ADR-0001 before use
@@ -75,3 +77,8 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
 python_version = "3.10"
 strict = true
 packages = ["kvwire", "faultlab", "bench"]
+
+[[tool.mypy.overrides]]
+# Optional extras (export, hub), imported lazily; not installed in the laptop tier.
+module = ["pyarrow", "pyarrow.*", "huggingface_hub"]
+ignore_missing_imports = true

@@ -1,0 +1,2 @@
+model,n_layers,kv_heads,head_dim,dtype,context_len,batch,block_size,kv_layout,tp,transport,nic,message_bytes,n_qps,rails,gpudirect_mode,rep,total_bytes,duration_ns,cpu_ns
+m8b,32,8,128,bf16,2048,1,16,interleaved,1,rdma_a,nic0,65536,1,1,dmabuf,0,4000000,500000,

@@ -32,6 +32,31 @@ def _cmd_kv_size(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_export(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from kvwire.export import build, has_errors, validate
+    from kvwire.export.write import push, write_dataset
+
+    ds = build(Path(r) for r in args.runs)
+    issues = validate(ds)
+    for issue in issues:
+        print(issue, file=sys.stderr)
+    if ds.dropped_rxe_rows:
+        print(f"dropped {ds.dropped_rxe_rows} SoftRoCE (rxe) rows", file=sys.stderr)
+    if has_errors(issues):
+        print("validation failed; nothing written", file=sys.stderr)
+        return 1
+    if args.validate_only:
+        print("validation passed")
+        return 0
+    for path in write_dataset(ds, Path(args.out), args.format):
+        print(f"wrote {path}")
+    if args.push:
+        push(Path(args.out), args.repo_id)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="kvwire")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -45,6 +70,15 @@ def main(argv: list[str] | None = None) -> int:
     kv.add_argument("--layout", choices=[x.value for x in KvLayout], default="interleaved")
     kv.add_argument("--tp", type=int, default=1)
     kv.set_defaults(func=_cmd_kv_size)
+
+    ex = sub.add_parser("export", help="build the rdma-kv-transfer-traces dataset from runs")
+    ex.add_argument("--runs", nargs="+", required=True, help="bench/results/<run_id> dirs")
+    ex.add_argument("--out", default="out/rdma-kv-transfer-traces")
+    ex.add_argument("--format", choices=["parquet", "jsonl"], default="parquet")
+    ex.add_argument("--validate-only", action="store_true", help="run the checks; write nothing")
+    ex.add_argument("--push", action="store_true", help="upload after an interactive confirm")
+    ex.add_argument("--repo-id", default="nareshns2004/rdma-kv-transfer-traces")
+    ex.set_defaults(func=_cmd_export)
 
     # TODO(M1): `kvwire topo`, `kvwire manifest`; TODO(M3): `kvwire router`, `kvwire worker`.
     args = parser.parse_args(argv)
